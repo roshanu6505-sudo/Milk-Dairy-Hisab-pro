@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Milk Dairy Hisab Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial;background:#f2f2f2;margin:0}
+.dark{background:#121212;color:white}
+header{background:#0d6efd;color:white;padding:12px;text-align:center;display:flex;justify-content:center;align-items:center;gap:10px}
+.container{padding:15px}
+input,select,button{width:100%;padding:10px;margin:5px 0;font-size:15px}
+button{background:#28a745;color:white;border:none;cursor:pointer}
+table{width:100%;border-collapse:collapse;background:white;margin-top:10px}
+th,td{border:1px solid #ccc;padding:6px;text-align:center}
+th{background:#0d6efd;color:white}
+.card{background:white;padding:10px;border-radius:6px;margin-top:10px}
+.dark .card,.dark table{background:#1e1e1e}
+.flex{display:flex;gap:5px}
+.small{font-size:13px}
+</style>
+</head>
+
+<body id="body">
+
+<header>
+🥛 Milk Dairy Hisab <b>PRO</b>
+<button onclick="toggleDark()" style="width:auto">👨‍🌾</button>
+</header>
+
+<div class="container" id="lockScreen">
+<h3>🔐 Enter PIN</h3>
+<input id="pinInput" type="password" placeholder="Default PIN: 1234">
+<button onclick="unlock()">Unlock</button>
+</div>
+
+<div class="container" id="app" style="display:none">
+
+<div class="card">
+<input id="name" placeholder="Customer Name">
+<input id="liter" type="number" placeholder="Milk (Liter)">
+<input id="rate" type="number" placeholder="Rate">
+<button onclick="save()">Save Entry</button>
+</div>
+
+<div class="card">
+<select id="customerFilter" onchange="show()">
+<option value="all">All Customers</option>
+</select>
+
+<table>
+<thead>
+<tr>
+<th>Date</th><th>Name</th><th>L</th><th>₹</th><th>Total</th><th>❌</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<div class="small">Total: ₹ <b id="grand">0</b></div>
+</div>
+
+<div class="card">
+<button onclick="backup()">📤 Backup</button>
+<button onclick="restore()">📥 Restore</button>
+</div>
+
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("milkPro")) || [];
+let pin = localStorage.getItem("pin") || "1234";
+
+function unlock(){
+ if(document.getElementById("pinInput").value==pin){
+  document.getElementById("lockScreen").style.display="none";
+  document.getElementById("app").style.display="block";
+  show();
+ } else alert("Wrong PIN");
+}
+
+function save(){
+ let n=document.getElementById("name").value.trim();
+ let l=document.getElementById("liter").value;
+ let r=document.getElementById("rate").value;
+ if(!n||!l||!r) return alert("Fill all fields");
+
+ data.push({d:new Date().toLocaleDateString(), n, l, r, t:l*r});
+
+ localStorage.setItem("milkPro",JSON.stringify(data));
+ document.getElementById("name").value="";
+ document.getElementById("liter").value="";
+ document.getElementById("rate").value="";
+ show();
+}
+
+function show(){
+ let f=document.getElementById("customerFilter").value;
+ let list=document.getElementById("list");
+ list.innerHTML=""; 
+ let g=0;
+ data.forEach((e,i)=>{
+  if(f=="all"||f==e.n){
+   g+=e.t;
+   list.innerHTML+=`
+   <tr>
+   <td>${e.d}</td><td>${e.n}</td><td>${e.l}</td>
+   <td>${e.r}</td><td>${e.t}</td>
+   <td onclick="del(${i})" style="cursor:pointer">❌</td>
+   </tr>`;
+  }
+ });
+ document.getElementById("grand").innerText=g;
+ loadCustomers();
+}
+
+function loadCustomers(){
+ let names=[...new Set(data.map(e=>e.n))];
+ let filter=document.getElementById("customerFilter");
+ filter.innerHTML='<option value="all">All Customers</option>';
+ names.forEach(n=>filter.innerHTML+=`<option>${n}</option>`);
+}
+
+function del(i){
+ if(confirm("Delete?")){
+  data.splice(i,1);
+  localStorage.setItem("milkPro",JSON.stringify(data));
+  show();
+ }
+}
+
+function toggleDark(){
+ document.getElementById("body").classList.toggle("dark");
+}
+
+function backup(){
+ prompt("Copy Backup Code",btoa(JSON.stringify(data)));
+}
+
+function restore(){
+ let c=prompt("Paste Backup Code");
+ if(c){
+  data=JSON.parse(atob(c));
+  localStorage.setItem("milkPro",JSON.stringify(data));
+  show();
+ }
+}
+</script>
+
+</body>
+</html>
